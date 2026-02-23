@@ -1,6 +1,8 @@
 <div align="center">
 
-# 🌐 Clash 订阅聚合代理桥
+# 🌐 Clash Subscription Aggregator
+
+### Clash / mihomo 多订阅聚合代理桥
 
 <p>
   <img src="https://img.shields.io/badge/Go-1.22+-00ADD8?style=flat-square&logo=go&logoColor=white" />
@@ -9,7 +11,9 @@
   <img src="https://img.shields.io/github/stars/LordVibeCoding/clash-sub-aggregator?style=flat-square&color=yellow" />
 </p>
 
-<p><strong>将多个 Clash 代理订阅聚合为统一代理入口<br/>通过 RESTful API 集中管理节点、自由切换线路</strong></p>
+<p><strong>Merge multiple Clash/mihomo proxy subscriptions into one unified HTTP/SOCKS5 proxy endpoint.<br/>Manage nodes, switch lines, and health-check via RESTful API.</strong></p>
+
+<p>将多个 Clash 代理订阅聚合为统一代理入口，通过 REST API 集中管理节点、自由切换线路、自动健康检查</p>
 
 <br/>
 
