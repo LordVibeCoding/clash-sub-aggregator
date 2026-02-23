@@ -12,9 +12,15 @@ import (
 	"github.com/google/uuid"
 )
 
+// BlacklistChecker 黑名单检查接口，避免循环依赖
+type BlacklistChecker interface {
+	IsBlacklisted(name string) bool
+}
+
 type Manager struct {
-	store  *store.Store
-	client *http.Client
+	store     *store.Store
+	client    *http.Client
+	blacklist BlacklistChecker
 }
 
 func NewManager(s *store.Store) *Manager {
@@ -99,8 +105,28 @@ func (m *Manager) RefreshOne(id string) (model.Subscription, error) {
 	return sub, nil
 }
 
-// AllProxies 获取所有订阅的代理节点（去重）
+// SetBlacklistChecker 设置黑名单检查器
+func (m *Manager) SetBlacklistChecker(bc BlacklistChecker) {
+	m.blacklist = bc
+}
+
+// AllProxies 获取所有订阅的代理节点（去重），过滤黑名单
 func (m *Manager) AllProxies() []model.Proxy {
+	all := m.AllProxiesUnfiltered()
+	if m.blacklist == nil {
+		return all
+	}
+	filtered := make([]model.Proxy, 0, len(all))
+	for _, p := range all {
+		if !m.blacklist.IsBlacklisted(ProxyName(p)) {
+			filtered = append(filtered, p)
+		}
+	}
+	return filtered
+}
+
+// AllProxiesUnfiltered 获取所有代理节点（去重），不过滤黑名单，供健康检查使用
+func (m *Manager) AllProxiesUnfiltered() []model.Proxy {
 	subs := m.store.List()
 	seen := make(map[string]bool)
 	var all []model.Proxy

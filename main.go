@@ -8,6 +8,7 @@ import (
 
 	"clash-sub-aggregator/internal/api"
 	"clash-sub-aggregator/internal/clash"
+	"clash-sub-aggregator/internal/health"
 	"clash-sub-aggregator/internal/model"
 	"clash-sub-aggregator/internal/store"
 	"clash-sub-aggregator/internal/subscription"
@@ -30,17 +31,23 @@ func main() {
 	// 初始化 mihomo 进程管理
 	proc := clash.NewProcess(cfg.Mihomo, subMgr)
 
+	// 初始化健康检查器
+	hc := health.New(proc.ControllerAddr, proc.IsRunning, subMgr, proc.Restart)
+	subMgr.SetBlacklistChecker(hc)
+
 	// 如果有订阅数据，自动启动 mihomo
 	if len(subMgr.AllProxies()) > 0 {
 		if err := proc.Start(); err != nil {
 			log.Printf("自动启动 mihomo 失败: %v", err)
+		} else {
+			hc.Start()
 		}
 	} else {
 		log.Println("暂无代理节点，添加订阅后将自动启动 mihomo")
 	}
 
 	// 启动 API 服务
-	router := api.NewRouter(cfg.Server.Token, subMgr, proc)
+	router := api.NewRouter(cfg.Server.Token, subMgr, proc, hc)
 	addr := fmt.Sprintf(":%d", cfg.Server.Port)
 	log.Printf("管理 API 启动在 %s", addr)
 	log.Printf("代理端口: HTTP/SOCKS5 :%d", cfg.Mihomo.HTTPPort)
