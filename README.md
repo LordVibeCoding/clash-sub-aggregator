@@ -269,7 +269,7 @@ curl -x http://your-server:7890 https://api.example.com
 
 ## 💊 节点健康检查
 
-服务内置自动健康检查机制，每 30 分钟对所有代理节点测速：
+通过 API 按需触发健康检查，对所有节点测速：
 
 - 连接失败或超时（5s）的节点自动加入黑名单，从活跃配置中移除
 - 下次检查时恢复的节点自动移出黑名单，重新加入配置
@@ -277,16 +277,24 @@ curl -x http://your-server:7890 https://api.example.com
 - 最多 5 个节点并行测速，避免压力过大
 - 黑名单仅存内存，服务重启后重新检测
 
-```bash
-# 查看健康状态（黑名单列表、上次检查时间）
-curl http://your-server:8080/api/health \
-  -H "Authorization: Bearer your-token"
-# → {"blacklist": [...], "blacklist_count": 3, "last_check_at": "2026-02-24 02:30:00", ...}
+**完整使用流程：**
 
-# 手动触发一次健康检查（异步执行）
-curl -X POST http://your-server:8080/api/health/check \
+```bash
+# 1. 触发健康检查（异步执行）
+curl -s -X POST "http://your-server:8080/api/health/check" \
   -H "Authorization: Bearer your-token"
-# → {"message": "健康检查已触发"}
+
+# 2. 等待几秒后查看结果（黑名单 + 可用节点数）
+curl -s "http://your-server:8080/api/health" \
+  -H "Authorization: Bearer your-token"
+
+# 3. 获取可用节点列表（已自动过滤黑名单）
+curl -s "http://your-server:8080/api/proxies" \
+  -H "Authorization: Bearer your-token"
+
+# 4. 从中选一个节点切换
+curl -s -X PUT "http://your-server:8080/api/proxies/PROXY/{节点名URL编码}" \
+  -H "Authorization: Bearer your-token"
 ```
 
 ---

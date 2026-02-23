@@ -39,8 +39,6 @@ func main() {
 	if len(subMgr.AllProxies()) > 0 {
 		if err := proc.Start(); err != nil {
 			log.Printf("自动启动 mihomo 失败: %v", err)
-		} else {
-			hc.Start()
 		}
 	} else {
 		log.Println("暂无代理节点，添加订阅后将自动启动 mihomo")

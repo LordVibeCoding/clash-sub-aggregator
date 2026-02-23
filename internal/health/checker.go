@@ -12,7 +12,7 @@ import (
 	"clash-sub-aggregator/internal/subscription"
 )
 
-// Checker 健康检查器，定时测速并维护黑名单
+// Checker 健康检查器，按需测速并维护黑名单
 type Checker struct {
 	controllerAddr func() string
 	isRunning      func() bool
@@ -26,7 +26,6 @@ type Checker struct {
 	checking      bool
 
 	client *http.Client
-	stopCh chan struct{}
 }
 
 func New(
@@ -42,39 +41,6 @@ func New(
 		restart:        restart,
 		blacklist:      make(map[string]time.Time),
 		client:         &http.Client{Timeout: 6 * time.Second},
-	}
-}
-
-// Start 启动定时健康检查（30 分钟间隔）
-func (c *Checker) Start() {
-	c.stopCh = make(chan struct{})
-	go func() {
-		// 启动后 1 分钟执行首次检查
-		select {
-		case <-time.After(1 * time.Minute):
-		case <-c.stopCh:
-			return
-		}
-		c.CheckAll()
-
-		ticker := time.NewTicker(30 * time.Minute)
-		defer ticker.Stop()
-		for {
-			select {
-			case <-ticker.C:
-				c.CheckAll()
-			case <-c.stopCh:
-				return
-			}
-		}
-	}()
-	log.Println("健康检查器已启动，间隔 30 分钟")
-}
-
-// Stop 停止定时检查
-func (c *Checker) Stop() {
-	if c.stopCh != nil {
-		close(c.stopCh)
 	}
 }
 
