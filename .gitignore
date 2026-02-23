@@ -1,0 +1,16 @@
+# Binaries
+bin/
+
+# Runtime data
+data/*.json
+data/*.yaml
+!data/.gitkeep
+
+# IDE
+.idea/
+.vscode/
+*.swp
+
+# OS
+.DS_Store
+Thumbs.db

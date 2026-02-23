@@ -1,0 +1,15 @@
+services:
+  clash-aggregator:
+    build: .
+    container_name: clash-aggregator
+    restart: unless-stopped
+    ports:
+      - "8080:8080"   # 管理 API
+      - "7890:7890"   # HTTP/SOCKS5 代理
+      - "7891:7891"   # SOCKS5 代理
+      - "9090:9090"   # mihomo 控制面板
+    volumes:
+      - ./data:/app/data
+      - ./configs:/app/configs
+    environment:
+      - CONFIG_PATH=configs/app.yaml
