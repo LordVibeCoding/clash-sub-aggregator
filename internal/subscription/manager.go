@@ -122,7 +122,7 @@ func (m *Manager) fetch(url string) ([]model.Proxy, error) {
 	if err != nil {
 		return nil, err
 	}
-	req.Header.Set("User-Agent", "clash-sub-aggregator/1.0")
+	req.Header.Set("User-Agent", "clash-verge/v2.0.0")
 
 	resp, err := m.client.Do(req)
 	if err != nil {
