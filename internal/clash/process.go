@@ -7,6 +7,7 @@ import (
 	"os/exec"
 	"path/filepath"
 	"sync"
+	"time"
 
 	"clash-sub-aggregator/internal/model"
 	"clash-sub-aggregator/internal/subscription"
@@ -18,6 +19,7 @@ type Process struct {
 	cmd     *exec.Cmd
 	mu      sync.Mutex
 	running bool
+	stopCh  chan struct{} // 用于通知监控 goroutine 是主动停止
 }
 
 func NewProcess(cfg model.MihomoConfig, subMgr *subscription.Manager) *Process {
@@ -50,16 +52,25 @@ func (p *Process) Start() error {
 	}
 
 	p.running = true
+	p.stopCh = make(chan struct{})
 	log.Printf("mihomo 已启动, PID: %d", p.cmd.Process.Pid)
 
 	// 监控进程退出
+	stopCh := p.stopCh
+	cmd := p.cmd
 	go func() {
-		err := p.cmd.Wait()
+		err := cmd.Wait()
+		select {
+		case <-stopCh:
+			// 主动停止，不修改状态
+			return
+		default:
+		}
 		p.mu.Lock()
 		p.running = false
 		p.mu.Unlock()
 		if err != nil {
-			log.Printf("mihomo 退出: %v", err)
+			log.Printf("mihomo 异常退出: %v", err)
 		}
 	}()
 
@@ -75,11 +86,18 @@ func (p *Process) Stop() error {
 		return nil
 	}
 
+	// 通知监控 goroutine 这是主动停止
+	close(p.stopCh)
+
 	if err := p.cmd.Process.Kill(); err != nil {
 		return fmt.Errorf("停止 mihomo 失败: %w", err)
 	}
 	p.running = false
+	p.cmd = nil
 	log.Println("mihomo 已停止")
+
+	// 等一下确保端口释放
+	time.Sleep(500 * time.Millisecond)
 	return nil
 }
 
