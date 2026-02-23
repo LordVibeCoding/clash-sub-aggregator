@@ -1,6 +1,34 @@
+<div align="center">
+
 # 🌐 Clash 订阅聚合代理桥
 
-> 将多个 Clash 代理订阅聚合为统一的代理入口，通过 RESTful API 集中管理节点、自由切换线路。适合需要在多台设备/服务器上共享代理的场景。
+<p>
+  <img src="https://img.shields.io/badge/Go-1.22+-00ADD8?style=flat-square&logo=go&logoColor=white" />
+  <img src="https://img.shields.io/badge/mihomo-v1.19.20-6C5CE7?style=flat-square" />
+  <img src="https://img.shields.io/badge/License-MIT-green?style=flat-square" />
+  <img src="https://img.shields.io/github/stars/LordVibeCoding/clash-sub-aggregator?style=flat-square&color=yellow" />
+</p>
+
+<p><strong>将多个 Clash 代理订阅聚合为统一代理入口<br/>通过 RESTful API 集中管理节点、自由切换线路</strong></p>
+
+<br/>
+
+<table>
+<tr>
+<td align="center">🔗<br/><strong>多订阅聚合</strong></td>
+<td align="center">🎯<br/><strong>地区过滤</strong></td>
+<td align="center">🔀<br/><strong>API 切换</strong></td>
+<td align="center">📡<br/><strong>标准代理</strong></td>
+<td align="center">🛡️<br/><strong>Token 认证</strong></td>
+<td align="center">🔄<br/><strong>进程守护</strong></td>
+</tr>
+</table>
+
+</div>
+
+---
+
+## 工作原理
 
 ```
                           ┌─────────────────────┐
@@ -10,27 +38,31 @@
                           └─────────────────────┘
 ```
 
-## ✨ 特性
+<details>
+<summary><strong>📡 推荐部署架构（代理节点限制中国 IP 时）</strong></summary>
+<br/>
 
-- 🔗 **多订阅聚合** — 添加多个 Clash 订阅链接，自动拉取解析合并
-- 🎯 **地区过滤** — 只保留港/新/台/日等低延迟地区节点，自动过滤无关节点
-- 🔀 **API 切换** — 通过 API 随时切换代理节点，无需重启服务
-- 📡 **标准代理** — HTTP/SOCKS5 代理端口，任何支持代理的程序直接可用
-- 🛡️ **Token 认证** — Bearer Token 保护管理 API
-- ⚡ **自动重载** — 订阅变更后自动重新生成配置并重启 mihomo
-- 🔄 **进程守护** — mihomo 异常退出自动检测，支持热重启
+```
+                    管理 API（无需备案）
+用户  ──────────→  海外 VPS (nginx 反代) ──→ 国内 VPS :8080
+
+                    代理流量
+程序  ──────────→  国内 VPS :7890 ──→ mihomo ──→ 代理节点
+```
+
+- 国内 VPS 运行 mihomo + 管理服务（能连上代理节点入口）
+- 海外 VPS 用 nginx 反代管理 API（域名指向海外 VPS，不需要 ICP 备案）
+- 代理端口直连国内 VPS IP
+
+</details>
+
+---
 
 ## 🚀 快速开始
-
-### 环境要求
-
-- Go 1.22+
-- [mihomo](https://github.com/MetaCubeX/mihomo) v1.19.14+（需要 anytls 支持则 v1.19.14+）
 
 ### 安装 mihomo
 
 ```bash
-# Linux amd64（推荐 v1.19.20+）
 wget https://github.com/MetaCubeX/mihomo/releases/download/v1.19.20/mihomo-linux-amd64-v1.19.20.gz
 gunzip mihomo-linux-amd64-v1.19.20.gz
 chmod +x mihomo-linux-amd64-v1.19.20
@@ -42,21 +74,18 @@ mv mihomo-linux-amd64-v1.19.20 /usr/local/bin/mihomo
 ```bash
 git clone https://github.com/LordVibeCoding/clash-sub-aggregator.git
 cd clash-sub-aggregator
-
-# 修改配置（必须修改 token）
-vim configs/app.yaml
-
-# 编译运行
+vim configs/app.yaml  # 修改 token
 make run
 ```
 
-### Docker 部署
+### Docker
 
 ```bash
 docker compose up -d
 ```
 
-### Systemd 部署（推荐）
+<details>
+<summary><strong>📋 Systemd 部署（推荐生产环境）</strong></summary>
 
 ```bash
 make build
@@ -82,6 +111,10 @@ systemctl daemon-reload
 systemctl enable --now clash-aggregator
 ```
 
+</details>
+
+---
+
 ## ⚙️ 配置
 
 ```yaml
@@ -94,20 +127,38 @@ mihomo:
   config_dir: "./data"
   http_port: 7890               # HTTP/SOCKS5 混合代理端口
   socks_port: 7891              # SOCKS5 代理端口
-  controller_port: 9090         # mihomo External Controller
+  controller_port: 9090
   controller_secret: ""
 
 data_dir: "./data"
 ```
 
+---
+
 ## 📖 API
 
-所有请求需携带：`Authorization: Bearer <token>`
+> 所有请求需携带 `Authorization: Bearer <token>`
+
+<table>
+<tr><th>方法</th><th>路径</th><th>说明</th></tr>
+<tr><td><code>POST</code></td><td><code>/api/subscriptions</code></td><td>添加订阅</td></tr>
+<tr><td><code>GET</code></td><td><code>/api/subscriptions</code></td><td>列出所有订阅</td></tr>
+<tr><td><code>DELETE</code></td><td><code>/api/subscriptions/:id</code></td><td>删除订阅</td></tr>
+<tr><td><code>POST</code></td><td><code>/api/subscriptions/refresh</code></td><td>刷新所有订阅</td></tr>
+<tr><td><code>POST</code></td><td><code>/api/subscriptions/:id/refresh</code></td><td>刷新单个订阅</td></tr>
+<tr><td><code>GET</code></td><td><code>/api/proxies</code></td><td>列出所有代理节点</td></tr>
+<tr><td><code>PUT</code></td><td><code>/api/proxies/:group/:name</code></td><td>切换节点</td></tr>
+<tr><td><code>GET</code></td><td><code>/api/proxies/:name/delay</code></td><td>测试节点延迟</td></tr>
+<tr><td><code>GET</code></td><td><code>/api/status</code></td><td>服务状态</td></tr>
+</table>
+
+<details>
+<summary><strong>📝 API 使用示例</strong></summary>
 
 ### 订阅管理
 
 ```bash
-# 添加订阅（自动拉取解析，成功后自动启动/重启 mihomo）
+# 添加订阅
 curl -X POST http://your-server:8080/api/subscriptions \
   -H "Authorization: Bearer your-token" \
   -H "Content-Type: application/json" \
@@ -118,12 +169,8 @@ curl -X POST http://your-server:8080/api/subscriptions \
 curl http://your-server:8080/api/subscriptions \
   -H "Authorization: Bearer your-token"
 
-# 刷新所有订阅（重新拉取节点）
+# 刷新所有订阅
 curl -X POST http://your-server:8080/api/subscriptions/refresh \
-  -H "Authorization: Bearer your-token"
-
-# 刷新单个订阅
-curl -X POST http://your-server:8080/api/subscriptions/{id}/refresh \
   -H "Authorization: Bearer your-token"
 
 # 删除订阅
@@ -134,7 +181,7 @@ curl -X DELETE http://your-server:8080/api/subscriptions/{id} \
 ### 代理控制
 
 ```bash
-# 列出所有代理节点
+# 列出所有节点
 curl http://your-server:8080/api/proxies \
   -H "Authorization: Bearer your-token"
 
@@ -143,68 +190,95 @@ curl -X PUT "http://your-server:8080/api/proxies/PROXY/{节点名}" \
   -H "Authorization: Bearer your-token"
 # → {"message": "已切换到 🇭🇰HKG 01"}
 
-# 测试节点延迟
+# 测试延迟
 curl "http://your-server:8080/api/proxies/{节点名}/delay" \
   -H "Authorization: Bearer your-token"
-
-# 服务状态
-curl http://your-server:8080/api/status \
-  -H "Authorization: Bearer your-token"
 ```
+
+</details>
+
+---
 
 ## 🖥️ 客户端接入
 
+<table>
+<tr><th>方式</th><th>配置</th></tr>
+<tr>
+<td><strong>环境变量</strong></td>
+<td>
+
 ```bash
-# 环境变量（适用于大多数 CLI 工具、脚本）
 export http_proxy=http://your-server:7890
 export https_proxy=http://your-server:7890
+```
 
-# Git
+</td>
+</tr>
+<tr>
+<td><strong>Git</strong></td>
+<td>
+
+```bash
 git config --global http.proxy http://your-server:7890
+```
 
-# Python
+</td>
+</tr>
+<tr>
+<td><strong>Python</strong></td>
+<td>
+
+```python
 import requests
 proxies = {"http": "http://your-server:7890", "https": "http://your-server:7890"}
 requests.get("https://example.com", proxies=proxies)
-
-# Node.js
-HTTP_PROXY=http://your-server:7890 node app.js
-
-# curl
-curl -x http://your-server:7890 https://api.example.com
-
-# Proxifier / 系统代理
-# 类型: HTTP，地址: your-server，端口: 7890
 ```
+
+</td>
+</tr>
+<tr>
+<td><strong>Node.js</strong></td>
+<td>
+
+```bash
+HTTP_PROXY=http://your-server:7890 node app.js
+```
+
+</td>
+</tr>
+<tr>
+<td><strong>curl</strong></td>
+<td>
+
+```bash
+curl -x http://your-server:7890 https://api.example.com
+```
+
+</td>
+</tr>
+<tr>
+<td><strong>Proxifier</strong></td>
+<td>类型 HTTP，地址 your-server，端口 7890</td>
+</tr>
+</table>
+
+---
 
 ## 🌏 节点过滤
 
-默认只保留以下地区的节点：
+默认只保留低延迟地区节点：
 
-| 地区 | 匹配关键词 |
-|------|-----------|
-| 🇭🇰 香港 | HK, HKG, 香港 |
-| 🇸🇬 新加坡 | SG, SGP, 新加坡 |
-| 🇹🇼 台湾 | TW, TWN, 台湾 |
-| 🇯🇵 日本 | JP, JPN, 日本 |
+<table>
+<tr><th>地区</th><th>匹配关键词</th></tr>
+<tr><td>🇭🇰 香港</td><td><code>HK</code> <code>HKG</code> <code>香港</code></td></tr>
+<tr><td>🇸🇬 新加坡</td><td><code>SG</code> <code>SGP</code> <code>新加坡</code></td></tr>
+<tr><td>🇹🇼 台湾</td><td><code>TW</code> <code>TWN</code> <code>台湾</code></td></tr>
+<tr><td>🇯🇵 日本</td><td><code>JP</code> <code>JPN</code> <code>日本</code></td></tr>
+</table>
 
-修改过滤规则：编辑 `internal/subscription/parser.go` 中的 `allowedRegions`。
+> 修改过滤规则：编辑 `internal/subscription/parser.go` 中的 `allowedRegions`
 
-## 🏗️ 推荐部署架构
-
-如果代理订阅的入口节点只接受中国大陆 IP，推荐以下架构：
-
-```
-                    管理 API（无需备案）
-用户  ──────────→  海外 VPS (nginx 反代) ──→ 国内 VPS :8080
-
-                    代理流量
-程序  ──────────→  国内 VPS :7890 ──→ mihomo ──→ 代理节点
-```
-
-- 国内 VPS 运行 mihomo + 管理服务（能连上代理节点入口）
-- 海外 VPS 用 nginx 反代管理 API（域名指向海外 VPS，不需要 ICP 备案）
-- 代理端口直连国内 VPS IP
+---
 
 ## 📁 项目结构
 
@@ -216,7 +290,7 @@ clash-sub-aggregator/
 │   │   ├── router.go                # 路由定义
 │   │   ├── middleware.go            # Token 认证
 │   │   ├── subscription_handler.go  # 订阅 CRUD
-│   │   └── proxy_handler.go         # 代理控制（转发 mihomo API）
+│   │   └── proxy_handler.go         # 代理控制
 │   ├── clash/
 │   │   ├── config.go                # mihomo 配置生成
 │   │   └── process.go               # mihomo 进程管理
@@ -227,14 +301,16 @@ clash-sub-aggregator/
 │   │   └── model.go                 # 数据模型
 │   └── store/
 │       └── store.go                 # JSON 文件持久化
-├── configs/
-│   └── app.yaml                     # 应用配置
-├── data/                            # 运行时数据（自动生成）
+├── configs/app.yaml                 # 应用配置
 ├── Dockerfile
 ├── docker-compose.yaml
 └── Makefile
 ```
 
-## 📄 License
+---
 
-MIT
+<div align="center">
+
+MIT License
+
+</div>
