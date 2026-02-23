@@ -21,6 +21,7 @@
 <td align="center">📡<br/><strong>标准代理</strong></td>
 <td align="center">🛡️<br/><strong>Token 认证</strong></td>
 <td align="center">🔄<br/><strong>进程守护</strong></td>
+<td align="center">💊<br/><strong>健康检查</strong></td>
 </tr>
 </table>
 
@@ -150,6 +151,8 @@ data_dir: "./data"
 <tr><td><code>PUT</code></td><td><code>/api/proxies/:group/:name</code></td><td>切换节点</td></tr>
 <tr><td><code>GET</code></td><td><code>/api/proxies/:name/delay</code></td><td>测试节点延迟</td></tr>
 <tr><td><code>GET</code></td><td><code>/api/status</code></td><td>服务状态</td></tr>
+<tr><td><code>GET</code></td><td><code>/api/health</code></td><td>健康检查状态（黑名单、上次检查时间）</td></tr>
+<tr><td><code>POST</code></td><td><code>/api/health/check</code></td><td>手动触发健康检查</td></tr>
 </table>
 
 <details>
@@ -264,6 +267,30 @@ curl -x http://your-server:7890 https://api.example.com
 
 ---
 
+## 💊 节点健康检查
+
+服务内置自动健康检查机制，每 30 分钟对所有代理节点测速：
+
+- 连接失败或超时（5s）的节点自动加入黑名单，从活跃配置中移除
+- 下次检查时恢复的节点自动移出黑名单，重新加入配置
+- 黑名单变化时自动重启 mihomo 重载配置
+- 最多 5 个节点并行测速，避免压力过大
+- 黑名单仅存内存，服务重启后重新检测
+
+```bash
+# 查看健康状态（黑名单列表、上次检查时间）
+curl http://your-server:8080/api/health \
+  -H "Authorization: Bearer your-token"
+# → {"blacklist": [...], "blacklist_count": 3, "last_check_at": "2026-02-24 02:30:00", ...}
+
+# 手动触发一次健康检查（异步执行）
+curl -X POST http://your-server:8080/api/health/check \
+  -H "Authorization: Bearer your-token"
+# → {"message": "健康检查已触发"}
+```
+
+---
+
 ## 🌏 节点过滤
 
 默认只保留低延迟地区节点：
@@ -290,7 +317,10 @@ clash-sub-aggregator/
 │   │   ├── router.go                # 路由定义
 │   │   ├── middleware.go            # Token 认证
 │   │   ├── subscription_handler.go  # 订阅 CRUD
-│   │   └── proxy_handler.go         # 代理控制
+│   │   ├── proxy_handler.go         # 代理控制
+│   │   └── health_handler.go        # 健康检查 API
+│   ├── health/
+│   │   └── checker.go               # 定时健康检查 + 黑名单
 │   ├── clash/
 │   │   ├── config.go                # mihomo 配置生成
 │   │   └── process.go               # mihomo 进程管理
