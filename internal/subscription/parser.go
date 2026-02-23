@@ -47,10 +47,22 @@ var allowedRegions = []string{
 	"JP", "JPN", "日本", "🇯🇵",
 }
 
-// FilterByRegion 过滤只保留港/新/台/日节点
+// supportedTypes mihomo 支持的代理协议
+var supportedTypes = map[string]bool{
+	"ss": true, "ssr": true, "vmess": true, "vless": true,
+	"trojan": true, "hysteria": true, "hysteria2": true,
+	"wireguard": true, "tuic": true, "socks5": true, "http": true,
+	"snell": true, "ssh": true,
+}
+
+// FilterByRegion 过滤只保留港/新/台/日节点，并排除不支持的协议
 func FilterByRegion(proxies []model.Proxy) []model.Proxy {
 	var filtered []model.Proxy
 	for _, p := range proxies {
+		// 排除不支持的协议类型
+		if t, ok := p["type"].(string); ok && !supportedTypes[strings.ToLower(t)] {
+			continue
+		}
 		name := strings.ToUpper(ProxyName(p))
 		for _, region := range allowedRegions {
 			if strings.Contains(name, strings.ToUpper(region)) {
