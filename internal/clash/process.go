@@ -55,14 +55,14 @@ func (p *Process) Start() error {
 	p.stopCh = make(chan struct{})
 	log.Printf("mihomo 已启动, PID: %d", p.cmd.Process.Pid)
 
-	// 监控进程退出
+	// 监控进程退出，异常退出时自动重启
 	stopCh := p.stopCh
 	cmd := p.cmd
 	go func() {
 		err := cmd.Wait()
 		select {
 		case <-stopCh:
-			// 主动停止，不修改状态
+			// 主动停止，不重启
 			return
 		default:
 		}
@@ -70,8 +70,27 @@ func (p *Process) Start() error {
 		p.running = false
 		p.mu.Unlock()
 		if err != nil {
-			log.Printf("mihomo 异常退出: %v", err)
+			log.Printf("mihomo 异常退出: %v，将自动重启", err)
+		} else {
+			log.Println("mihomo 意外退出，将自动重启")
 		}
+		// 自动重启，最多重试 3 次，间隔递增
+		for i := 1; i <= 3; i++ {
+			delay := time.Duration(i) * 3 * time.Second
+			log.Printf("等待 %s 后第 %d 次重启 mihomo...", delay, i)
+			select {
+			case <-stopCh:
+				return
+			case <-time.After(delay):
+			}
+			if err := p.Start(); err != nil {
+				log.Printf("第 %d 次重启 mihomo 失败: %v", i, err)
+				continue
+			}
+			log.Printf("mihomo 第 %d 次重启成功", i)
+			return
+		}
+		log.Println("mihomo 连续 3 次重启失败，放弃自动重启")
 	}()
 
 	return nil
