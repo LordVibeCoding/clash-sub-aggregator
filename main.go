@@ -26,7 +26,7 @@ func main() {
 	}
 
 	// 初始化订阅管理器
-	subMgr := subscription.NewManager(s)
+	subMgr := subscription.NewManager(s, cfg.FetchProxy)
 
 	// 初始化 mihomo 进程管理
 	proc := clash.NewProcess(cfg.Mihomo, subMgr)
@@ -49,6 +49,9 @@ func main() {
 	addr := fmt.Sprintf(":%d", cfg.Server.Port)
 	log.Printf("管理 API 启动在 %s", addr)
 	log.Printf("代理端口: HTTP/SOCKS5 :%d", cfg.Mihomo.HTTPPort)
+	if cfg.FetchProxy != "" {
+		log.Printf("订阅拉取代理: %s", cfg.FetchProxy)
+	}
 
 	if err := http.ListenAndServe(addr, router); err != nil {
 		log.Fatalf("服务启动失败: %v", err)

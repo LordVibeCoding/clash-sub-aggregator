@@ -1,12 +1,12 @@
 server:
-  port: 8080
-  token: "change-me-to-a-secure-token"
+  port: 47079
+  token: "csa-x7k9m2p4q8"
 
 mihomo:
   binary: "/usr/local/bin/mihomo"
   config_dir: "./data"
-  http_port: 7890
-  socks_port: 7891
+  http_port: 47078
+  socks_port: 47077
   controller_port: 9090
   controller_secret: ""
 

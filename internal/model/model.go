@@ -17,9 +17,10 @@ type Proxy = map[string]any
 
 // AppConfig 应用配置
 type AppConfig struct {
-	Server   ServerConfig `yaml:"server"`
-	Mihomo   MihomoConfig `yaml:"mihomo"`
-	DataDir  string       `yaml:"data_dir"`
+	Server     ServerConfig `yaml:"server"`
+	Mihomo     MihomoConfig `yaml:"mihomo"`
+	DataDir    string       `yaml:"data_dir"`
+	FetchProxy string       `yaml:"fetch_proxy"` // 拉取订阅用的代理，如 socks5://国内IP:1080
 }
 
 type ServerConfig struct {

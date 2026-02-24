@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"net/url"
 	"time"
 
 	"clash-sub-aggregator/internal/model"
@@ -23,11 +24,19 @@ type Manager struct {
 	blacklist BlacklistChecker
 }
 
-func NewManager(s *store.Store) *Manager {
+func NewManager(s *store.Store, fetchProxy string) *Manager {
+	transport := &http.Transport{}
+	if fetchProxy != "" {
+		proxyURL, err := url.Parse(fetchProxy)
+		if err == nil {
+			transport.Proxy = http.ProxyURL(proxyURL)
+		}
+	}
 	return &Manager{
 		store: s,
 		client: &http.Client{
-			Timeout: 30 * time.Second,
+			Timeout:   30 * time.Second,
+			Transport: transport,
 		},
 	}
 }
