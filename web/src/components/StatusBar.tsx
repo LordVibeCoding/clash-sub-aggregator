@@ -1,14 +1,14 @@
 import { useState, useEffect } from "react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Settings } from "lucide-react";
+import { LogOut } from "lucide-react";
 import { getStatus, type ServiceStatus } from "@/lib/api";
 
 interface Props {
-  onTokenClick: () => void;
+  onLogout: () => void;
 }
 
-export function StatusBar({ onTokenClick }: Props) {
+export function StatusBar({ onLogout }: Props) {
   const [status, setStatus] = useState<ServiceStatus | null>(null);
 
   useEffect(() => {
@@ -29,8 +29,9 @@ export function StatusBar({ onTokenClick }: Props) {
       ) : (
         <Badge variant="outline">连接中...</Badge>
       )}
-      <Button variant="ghost" size="icon" onClick={onTokenClick} aria-label="设置 Token">
-        <Settings className="h-4 w-4" />
+      <Button variant="ghost" size="sm" onClick={onLogout} aria-label="退出登录">
+        <LogOut className="h-4 w-4 mr-1" />
+        退出
       </Button>
     </div>
   );
